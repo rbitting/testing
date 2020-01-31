@@ -1,1 +1,1 @@
-These all have fake scores. Purely for testing purposes only.
+Purely for testing purposes.
