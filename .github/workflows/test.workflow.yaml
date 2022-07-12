@@ -25,8 +25,16 @@ jobs:
     - name: Set Job Summary
       id: set_job_summary
       run: |
+        URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+        FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
         echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
-        echo "URL path retrieved from dummy endpoint: " >> $GITHUB_STEP_SUMMARY
+        echo "## Files Updated" >> $GITHUB_STEP_SUMMARY
+        for i in "${FILES[@]}"
+        do
+          echo $i >> $GITHUB_STEP_SUMMARY
+        done
+        echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
+        echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
         curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
 
   # "Deploys" to prod environment
