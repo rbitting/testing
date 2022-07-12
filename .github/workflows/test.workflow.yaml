@@ -9,11 +9,11 @@ on:
 # TODO: verify md files affected
 jobs:
   # "Deploys" to dev environment
-  deploy-dev:
-    runs-on: 'ubuntu-latest'
-    environment: 'dev'
-    steps:
-      - run: echo "dev is deployed"
+  #deploy-dev:
+    #runs-on: 'ubuntu-latest'
+    #environment: 'dev'
+    #steps:
+      #- run: echo "dev is deployed"
 
   # "Deploys" to staging environment
   deploy-qa:
@@ -27,7 +27,7 @@ jobs:
       run: |
         echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
         echo "URL path retrieved from dummy endpoint: " >> $GITHUB_STEP_SUMMARY
-        ENDPOINT_DATA=$(curl -X GET -s -S https://developer.twitter.com/en.useful-links.json) && echo $ENDPOINT_DATA && echo $ENDPOINT_DATA | jq --raw-output '.publishUrl' >> $GITHUB_STEP_SUMMARY
+        ENDPOINT_DATA=$(curl -X GET -s -S "https://developer.twitter.com/en.useful-links.json") && echo $ENDPOINT_DATA && echo $ENDPOINT_DATA | jq --raw-output '.publishUrl' >> $GITHUB_STEP_SUMMARY
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
