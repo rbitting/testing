@@ -28,6 +28,6 @@ jobs:
   deploy-prod:
     runs-on: 'ubuntu-latest'
     environment: 'prod'
-    needs: [if_merged]
+    needs: [deploy-qa]
     steps:
       - run: echo "### Prod deploy" >> $GITHUB_STEP_SUMMARY
