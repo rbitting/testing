@@ -20,7 +20,7 @@ jobs:
     #if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
-    needs: [deploy-dev]
+    #needs: [deploy-dev]
     steps:
     - name: Set Job Summary
       id: set_job_summary
@@ -34,6 +34,6 @@ jobs:
   deploy-prod:
     runs-on: 'ubuntu-latest'
     environment: 'prod'
-    needs: [deploy-dev, deploy-qa]
+    needs: [deploy-qa] #[deploy-dev, deploy-qa]
     steps:
       - run: echo "### Prod deploy" >> $GITHUB_STEP_SUMMARY
