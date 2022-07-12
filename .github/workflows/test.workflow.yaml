@@ -22,7 +22,12 @@ jobs:
     environment: 'qa'
     needs: [deploy-dev]
     steps:
-    - run: echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
+    - name: Set Job Summary
+      id: set_job_summary
+      run: |
+        echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
+        echo "URL path retrieved from dummy endpoint: " >> $GITHUB_STEP_SUMMARY
+        curl https://developer.twitter.com/en.useful-links.json | jq --raw-output '.publishUrl' >> $GITHUB_STEP_SUMMARY
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
