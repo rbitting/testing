@@ -1,0 +1,32 @@
+on:
+  pull_request_target:
+    paths:
+      - '**.md'
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  # "Deploys" to dev environment
+  deploy-dev:
+    runs-on: 'ubuntu-latest'
+    environment: 'dev'
+    steps:
+      - run: echo "dev is deployed"
+
+  # "Deploys" to staging environment
+  if_merged:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    environment: 'qa'
+    steps:
+    - run: echo "The .md PR was merged"
+
+  # "Deploys" to prod environment
+  # In environment settings of repo, be sure that prod has reviewers assigned
+  deploy-prod:
+    runs-on: 'ubuntu-latest'
+    environment: 'prod'
+    needs: [if_merged]
+    steps:
+      - run: echo "Prod is deployed"
