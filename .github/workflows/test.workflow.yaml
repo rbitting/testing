@@ -17,9 +17,10 @@ jobs:
 
   # "Deploys" to staging environment
   deploy-qa:
-    if: github.event.pull_request.merged == true
+    #if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
+    needs: [deploy-dev]
     steps:
     - run: echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
 
@@ -28,6 +29,6 @@ jobs:
   deploy-prod:
     runs-on: 'ubuntu-latest'
     environment: 'prod'
-    needs: [deploy-qa]
+    needs: [deploy-dev, deploy-qa]
     steps:
       - run: echo "### Prod deploy" >> $GITHUB_STEP_SUMMARY
