@@ -6,6 +6,7 @@ on:
     types:
       - closed
 
+# TODO: verify md files affected
 jobs:
   # "Deploys" to dev environment
   deploy-dev:
@@ -15,18 +16,19 @@ jobs:
       - run: echo "dev is deployed"
 
   # "Deploys" to staging environment
-  if_merged:
-    if: github.event.pull_request.merged == true
+  deploy-qa:
+    #if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
+    needs: [deploy-dev]
     steps:
-    - run: echo "The .md PR was merged"
+    - run: echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
   deploy-prod:
     runs-on: 'ubuntu-latest'
     environment: 'prod'
-    needs: [if_merged]
+    needs: [deploy-dev, deploy-qa]
     steps:
-      - run: echo "Prod is deployed"
+      - run: echo "### Prod deploy" >> $GITHUB_STEP_SUMMARY
