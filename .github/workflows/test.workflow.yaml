@@ -1,59 +1,67 @@
 on:
+  # This workflow will only run on PRs containing .md changes
   pull_request_target:
     paths:
-      - '**.md'
+      - "**.md"
   pull_request:
     types:
       - closed
 
 jobs:
+  get-md-files:
+    runs-on: ubuntu-latest
+    outputs:
+      md_files: ${{ steps.get_md_files.outputs.md_files }}
+    steps:
+      - name: Get Changed Markdown File Names
+        id: get_md_files
+        run: |
+          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+          eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
+          echo "# Filename Aggregation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
+          echo "Markdown files (.md) in this pull request:" >> $GITHUB_STEP_SUMMARY
+          MD_FILENAMES=""
+          for filename in "${FILES[@]}"
+          do
+            if [[ $filename == *\.md ]]
+            then
+              echo "* $filename" >> $GITHUB_STEP_SUMMARY
+              MD_FILENAMES="$MD_FILENAMES$filename,"
+            fi 
+          done
+          if [[ $MD_FILENAMES == "" ]]
+          then
+            echo "* No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "::set-output name=md_files::$MD_FILENAMES"
   # "Deploys" to dev environment
+  # make manual
   #deploy-dev:
-    #runs-on: 'ubuntu-latest'
-    #environment: 'dev'
-    #steps:
-      #- run: echo "dev is deployed"
+  #runs-on: 'ubuntu-latest'
+  #environment: 'dev'
+  #steps:
+  #- run: echo "dev is deployed"
 
   # "Deploys" to staging environment
   deploy-qa:
-    #if: github.event.pull_request.merged == true
+    if: ${{needs.get-md-files.outputs.md_files}} && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: 'qa'
-    #needs: [deploy-dev]
+    environment: "qa"
+    needs: [get-md-files]
     steps:
-    - name: Set Job Summary
-      id: set_job_summary
-      run: |
-        URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
-        eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
-        echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
-        echo "## Markdown Files Updated" >> $GITHUB_STEP_SUMMARY
-        echo "These files were sent to AEM for injestion." >> $GITHUB_STEP_SUMMARY
-        FILENAMES_PAYLOAD=""
-        for i in "${FILES[@]}"
-        do
-          if [[ $i == *\.md ]]
-          then
-            echo "* $i" >> $GITHUB_STEP_SUMMARY
-            FILENAMES_PAYLOAD="$FILENAMES_PAYLOAD$i,"
-          fi 
-        done
-
-        echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
-        if [[ $FILENAMES_PAYLOAD != "" ]]
-        then
-          # Send $FILENAMES_PAYLOAD to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
-          echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
-          curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
-        fi
+      - name: AEM Injestion - Staging
+        id: aem_injestion_qa
+        run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- qa "${{needs.get-md-files.outputs.md_files}}"
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
   deploy-prod:
-    runs-on: 'ubuntu-latest'
-    environment: 'prod'
-    needs: [deploy-qa] #[deploy-dev, deploy-qa]
+    if: ${{needs.get-md-files.outputs.md_files}} && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    environment: "prod"
+    needs: [get-md-files, deploy-qa]
     steps:
-      - run: echo "### Prod deploy" >> $GITHUB_STEP_SUMMARY
+      - name: AEM Injestion - Production
+        id: aem_injestion_prod
+        run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- prod "${{needs.get-md-files.outputs.md_files}}"
