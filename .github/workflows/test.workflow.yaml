@@ -7,7 +7,35 @@ on:
       - closed
 
 jobs:
+  check-for-md-files:
+    runs-on: ubuntu-latest
+    outputs:
+      md_files: ${{ steps.set_job_summary.outputs.md_files }}
+    steps:
+      - name: Check for MD files in PR
+        id: md_files_check
+        run: |
+          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+          eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
+          echo "# Markdown Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
+          echo "Markdown files (.md) in this pull request:" >> $GITHUB_STEP_SUMMARY
+          MD_FILENAMES=""
+          for filename in "${FILES[@]}"
+          do
+            if [[ $filename == *\.md ]]
+            then
+              echo "* $filename" >> $GITHUB_STEP_SUMMARY
+              MD_FILENAMES="$MD_FILENAMES$filename,"
+            fi 
+          done
+          if [[ $MD_FILENAMES == "" ]]
+          then
+            echo "* No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "::set-output name=md_files::$MD_FILENAMES"
   # "Deploys" to dev environment
+  # make manual
   #deploy-dev:
     #runs-on: 'ubuntu-latest'
     #environment: 'dev'
@@ -16,44 +44,51 @@ jobs:
 
   # "Deploys" to staging environment
   deploy-qa:
-    #if: github.event.pull_request.merged == true
+    if: ! -z needs.check-for-md-files.outputs.md_files  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
-    #needs: [deploy-dev]
+    needs: [check-for-md-files]
     steps:
-    - name: Set Job Summary
-      id: set_job_summary
+    - name: AEM Injestion - Staging
+      id: aem_injestion_qa
       run: |
-        URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
-        eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
-        echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
-        echo "## Markdown Files Updated" >> $GITHUB_STEP_SUMMARY
-        echo "These files were sent to AEM for injestion." >> $GITHUB_STEP_SUMMARY
-        FILENAMES_PAYLOAD=""
-        for i in "${FILES[@]}"
-        do
-          if [[ $i == *\.md ]]
-          then
-            echo "* $i" >> $GITHUB_STEP_SUMMARY
-            FILENAMES_PAYLOAD="$FILENAMES_PAYLOAD$i,"
-          fi 
-        done
-
-        echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
-        if [[ $FILENAMES_PAYLOAD != "" ]]
+        echo "# Staging Deployment Complete" >> $GITHUB_STEP_SUMMARY
+        $MD_FILENAMES = {{ needs.check-for-md-files.outputs.md_files }}
+        echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
+        echo "The following files were sent to AEM staging: $MD_FILENAMES"
+        if [[ ! -z $MD_FILENAMES ]]
         then
-          # Send $FILENAMES_PAYLOAD to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
+          echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
+          # Send $MD_FILENAMES to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
           echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
           curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
         else
           echo "No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
+          echo "Tell an MSEng developer there is probably an issue in the check-for-md-files job. This script shouldn't run if there aren't any .md files in the PR."
         fi
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
   deploy-prod:
-    runs-on: 'ubuntu-latest'
-    environment: 'prod'
-    needs: [deploy-qa] #[deploy-dev, deploy-qa]
+    if: ! -z needs.check-for-md-files.outputs.md_files  # github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    environment: 'qa'
+    needs: [check-for-md-files]
     steps:
-      - run: echo "### Prod deploy" >> $GITHUB_STEP_SUMMARY
+    - name: AEM Injestion - Production
+      id: aem_injestion_prod
+      run: |
+        echo "# Prod Deployment Complete" >> $GITHUB_STEP_SUMMARY
+        $MD_FILENAMES = {{ needs.check-for-md-files.outputs.md_files }}
+        echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
+        echo "The following files were sent to AEM prod: $MD_FILENAMES"
+        if [[ ! -z $MD_FILENAMES ]]
+        then
+          echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
+          # Send $MD_FILENAMES to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
+          echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
+          curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
+          echo "Tell an MSEng developer there is probably an issue in the check-for-md-files job. This script shouldn't run if there aren't any .md files in the PR."
+        fi
