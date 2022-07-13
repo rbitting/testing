@@ -28,11 +28,11 @@ jobs:
         eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
         echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
         echo "## Markdown Files Updated" >> $GITHUB_STEP_SUMMARY
-        echo "These files were sent to AEM for injestion."
+        echo "These files were sent to AEM for injestion." >> $GITHUB_STEP_SUMMARY
         PAYLOAD_FILES=""
         for i in "${FILES[@]}"
         do
-          if [[ $1 == *\.md ]]
+          if [[ $i == *\.md ]]
           then
             echo "* $i" >> $GITHUB_STEP_SUMMARY
             PAYLOAD_FILES="$PAYLOAD_FILES$i,"
