@@ -6,7 +6,6 @@ on:
     types:
       - closed
 
-# TODO: verify md files affected
 jobs:
   # "Deploys" to dev environment
   #deploy-dev:
@@ -26,7 +25,7 @@ jobs:
       id: set_job_summary
       run: |
         URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
-        FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
+        eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
         echo "### QA deploy" >> $GITHUB_STEP_SUMMARY
         echo "## Markdown Files Updated" >> $GITHUB_STEP_SUMMARY
         echo "These files were sent to AEM for injestion."
@@ -39,9 +38,16 @@ jobs:
             PAYLOAD_FILES="$PAYLOAD_FILES$i,"
           fi 
         done
+
         echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
-        echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
-        curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
+        if [[ $PAYLOAD != "" ]]
+        then
+          # Send $PAYLOAD_FILES to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
+          echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
+          curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
+        fi
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
