@@ -44,7 +44,7 @@ jobs:
 
   # "Deploys" to staging environment
   deploy-qa:
-    if: ! -z needs.check-for-md-files.outputs.md_files  # github.event.pull_request.merged == true
+    if: ! -z ${{needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
     needs: [check-for-md-files]
@@ -53,7 +53,7 @@ jobs:
       id: aem_injestion_qa
       run: |
         echo "# Staging Deployment Complete" >> $GITHUB_STEP_SUMMARY
-        $MD_FILENAMES = {{ needs.check-for-md-files.outputs.md_files }}
+        $MD_FILENAMES = ${{needs.check-for-md-files.outputs.md_files}}
         echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
         echo "The following files were sent to AEM staging: $MD_FILENAMES"
         if [[ ! -z $MD_FILENAMES ]]
