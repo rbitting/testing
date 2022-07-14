@@ -1,4 +1,5 @@
 on:
+  # This workflow will only run on PRs containing .md changes
   pull_request_target:
     paths:
       - '**.md'
@@ -7,13 +8,13 @@ on:
       - closed
 
 jobs:
-  check-for-md-files:
+  get-md-files:
     runs-on: ubuntu-latest
     outputs:
-      md_files: ${{ steps.md_files_check.outputs.md_files }}
+      md_files: ${{ steps.get_md_files.outputs.md_files }}
     steps:
-      - name: Check for MD files in PR
-        id: md_files_check
+      - name: Get Changed Markdown File Names
+        id: get_md_files
         run: |
           URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
           eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
@@ -44,51 +45,25 @@ jobs:
 
   # "Deploys" to staging environment
   deploy-qa:
-    if: ${{needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
+    if: ${{needs.get-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
-    needs: [check-for-md-files]
+    needs: [get-md-files]
     steps:
     - name: AEM Injestion - Staging
       id: aem_injestion_qa
       run: |
-        echo "# Staging Deployment Complete" >> $GITHUB_STEP_SUMMARY
-        $MD_FILENAMES = ${{needs.check-for-md-files.outputs.md_files}}
-        echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
-        echo "The following files were sent to AEM staging: $MD_FILENAMES"
-        if [[ ! -z $MD_FILENAMES ]]
-        then
-          echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
-          # Send $MD_FILENAMES to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
-          echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
-          curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
-          echo "Tell an MSEng developer there is probably an issue in the check-for-md-files job. This script shouldn't run if there aren't any .md files in the PR."
-        fi
+        ./.github/workflows/scripts/aem-injestion.sh qa "${{needs.get-md-files.outputs.md_files}}"
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
   deploy-prod:
-    #if: ${{needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
+    #if: ${{needs.get-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
-    needs: [check-for-md-files, deploy-qa]
+    needs: [get-md-files, deploy-qa]
     steps:
     - name: AEM Injestion - Production
       id: aem_injestion_prod
       run: |
-        echo "# Prod Deployment Complete" >> $GITHUB_STEP_SUMMARY
-        MD_FILENAMES={{ needs.check-for-md-files.outputs.md_files }}
-        echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
-        echo "The following files were sent to AEM prod: $MD_FILENAMES"
-        if [[ ! -z $MD_FILENAMES ]]
-        then
-          echo "## Preview URLs" >> $GITHUB_STEP_SUMMARY
-          # Send $MD_FILENAMES to AEM endpoint here. AEM injests Github files then returns the publish staging URLs.
-          echo "(URL path retrieved from dummy endpoint. This should print actual AEM preview URLs based on build of updated files above.)" >> $GITHUB_STEP_SUMMARY
-          curl -X GET -s -S "https://raw.githubusercontent.com/rbitting/testing/master/test.json" | jq --raw-output '.url' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "No .md files were updated in this PR." >> $GITHUB_STEP_SUMMARY
-          echo "Tell an MSEng developer there is probably an issue in the check-for-md-files job. This script shouldn't run if there aren't any .md files in the PR."
-        fi
+        ./.github/workflows/scripts/aem-injestion.sh prod "${{needs.get-md-files.outputs.md_files}}"
