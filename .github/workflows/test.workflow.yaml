@@ -10,7 +10,7 @@ jobs:
   check-for-md-files:
     runs-on: ubuntu-latest
     outputs:
-      md_files: ${{ steps.set_job_summary.outputs.md_files }}
+      md_files: ${{ steps.md_files_check.outputs.md_files }}
     steps:
       - name: Check for MD files in PR
         id: md_files_check
@@ -44,7 +44,7 @@ jobs:
 
   # "Deploys" to staging environment
   deploy-qa:
-    if: ! -z ${{needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
+    if: ${{! -z needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
     needs: [check-for-md-files]
@@ -73,7 +73,7 @@ jobs:
     if: ! -z needs.check-for-md-files.outputs.md_files  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
-    needs: [check-for-md-files]
+    needs: [check-for-md-files, deploy-qa]
     steps:
     - name: AEM Injestion - Production
       id: aem_injestion_prod
