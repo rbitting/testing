@@ -53,9 +53,7 @@ jobs:
     - name: AEM Injestion - Staging
       id: aem_injestion_qa
       run: |
-        INJESTION_SCRIPT="${GITHUB_WORKSPACE}/.github/workflows/scripts/aem-injestion.sh"
-        chmod +x $INJESTION_SCRIPT
-        $INJESTION_SCRIPT qa "${{needs.get-md-files.outputs.md_files}}"
+        bash ${GITHUB_WORKSPACE}/.github/workflows/scripts/aem-injestion.sh qa "${{needs.get-md-files.outputs.md_files}}"
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
@@ -68,6 +66,4 @@ jobs:
     - name: AEM Injestion - Production
       id: aem_injestion_prod
       run: |
-        INJESTION_SCRIPT="${GITHUB_WORKSPACE}/.github/workflows/scripts/aem-injestion.sh"
-        chmod +x $INJESTION_SCRIPT
-        $INJESTION_SCRIPT prod "${{needs.get-md-files.outputs.md_files}}"
+        bash ${GITHUB_WORKSPACE}/.github/workflows/scripts/aem-injestion.sh prod "${{needs.get-md-files.outputs.md_files}}"
