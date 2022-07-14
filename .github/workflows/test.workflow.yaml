@@ -52,7 +52,7 @@ jobs:
     steps:
     - name: AEM Injestion - Staging
       id: aem_injestion_qa
-      run: curl -X -s -S GET https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- qa "${{needs.get-md-files.outputs.md_files}}"
+      run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- qa "${{needs.get-md-files.outputs.md_files}}"
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
@@ -64,4 +64,4 @@ jobs:
     steps:
     - name: AEM Injestion - Production
       id: aem_injestion_prod
-      run: curl -X -s -S GET https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- prod "${{needs.get-md-files.outputs.md_files}}"
+      run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- prod "${{needs.get-md-files.outputs.md_files}}"
