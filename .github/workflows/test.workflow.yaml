@@ -44,7 +44,7 @@ jobs:
 
   # "Deploys" to staging environment
   deploy-qa:
-    if: ${{! -z needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
+    if: ${{needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
     needs: [check-for-md-files]
@@ -70,7 +70,7 @@ jobs:
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
   deploy-prod:
-    if: ! -z needs.check-for-md-files.outputs.md_files  # github.event.pull_request.merged == true
+    #if: ${{needs.check-for-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: 'qa'
     needs: [check-for-md-files, deploy-qa]
