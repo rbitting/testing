@@ -79,7 +79,7 @@ jobs:
       id: aem_injestion_prod
       run: |
         echo "# Prod Deployment Complete" >> $GITHUB_STEP_SUMMARY
-        $MD_FILENAMES = {{ needs.check-for-md-files.outputs.md_files }}
+        MD_FILENAMES={{ needs.check-for-md-files.outputs.md_files }}
         echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
         echo "The following files were sent to AEM prod: $MD_FILENAMES"
         if [[ ! -z $MD_FILENAMES ]]
