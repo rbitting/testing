@@ -18,7 +18,7 @@ jobs:
         run: |
           URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
           eval FILES=\($(curl -s -X GET -G $URL | jq '.[].filename')\)
-          echo "# Markdown Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "# Filename Aggregation Complete" >> $GITHUB_STEP_SUMMARY
           echo "## Markdown Files" >> $GITHUB_STEP_SUMMARY
           echo "Markdown files (.md) in this pull request:" >> $GITHUB_STEP_SUMMARY
           MD_FILENAMES=""
@@ -52,8 +52,7 @@ jobs:
     steps:
     - name: AEM Injestion - Staging
       id: aem_injestion_qa
-      run: |
-        bash ${GITHUB_WORKSPACE}/.github/workflows/scripts/aem-injestion.sh qa "${{needs.get-md-files.outputs.md_files}}"
+      run: bash https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh qa "${{needs.get-md-files.outputs.md_files}}"
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
@@ -65,5 +64,4 @@ jobs:
     steps:
     - name: AEM Injestion - Production
       id: aem_injestion_prod
-      run: |
-        bash ${GITHUB_WORKSPACE}/.github/workflows/scripts/aem-injestion.sh prod "${{needs.get-md-files.outputs.md_files}}"
+      run: bash https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh prod "${{needs.get-md-files.outputs.md_files}}"
