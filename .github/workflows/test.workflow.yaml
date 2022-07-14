@@ -2,7 +2,7 @@ on:
   # This workflow will only run on PRs containing .md changes
   pull_request_target:
     paths:
-      - '**.md'
+      - "**.md"
   pull_request:
     types:
       - closed
@@ -38,30 +38,30 @@ jobs:
   # "Deploys" to dev environment
   # make manual
   #deploy-dev:
-    #runs-on: 'ubuntu-latest'
-    #environment: 'dev'
-    #steps:
-      #- run: echo "dev is deployed"
+  #runs-on: 'ubuntu-latest'
+  #environment: 'dev'
+  #steps:
+  #- run: echo "dev is deployed"
 
   # "Deploys" to staging environment
   deploy-qa:
-    if: ${{needs.get-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
+    if: ${{needs.get-md-files.outputs.md_files}} && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: 'qa'
+    environment: "qa"
     needs: [get-md-files]
     steps:
-    - name: AEM Injestion - Staging
-      id: aem_injestion_qa
-      run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- qa "${{needs.get-md-files.outputs.md_files}}"
+      - name: AEM Injestion - Staging
+        id: aem_injestion_qa
+        run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- qa "${{needs.get-md-files.outputs.md_files}}"
 
   # "Deploys" to prod environment
   # In environment settings of repo, be sure that prod has reviewers assigned
   deploy-prod:
-    #if: ${{needs.get-md-files.outputs.md_files}}  # github.event.pull_request.merged == true
+    if: ${{needs.get-md-files.outputs.md_files}} && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: 'qa'
+    environment: "prod"
     needs: [get-md-files, deploy-qa]
     steps:
-    - name: AEM Injestion - Production
-      id: aem_injestion_prod
-      run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- prod "${{needs.get-md-files.outputs.md_files}}"
+      - name: AEM Injestion - Production
+        id: aem_injestion_prod
+        run: curl -X GET -s -S https://raw.githubusercontent.com/rbitting/testing/master/.github/workflows/scripts/aem-injestion.sh | bash -s -- prod "${{needs.get-md-files.outputs.md_files}}"
